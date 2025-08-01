@@ -5,7 +5,6 @@ import {
   pokerApiService
 } from '../services/pokerApiService';
 import PokerWebSocketService from '../services/pokerWebSocketService';
-import CreatePokerSessionModal from './CreatePokerSessionModal';
 
 interface PokerSessionComponentProps {
   teamId: string;
@@ -17,9 +16,9 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
   const [votes, setVotes] = useState<PokerVote[]>([]);
   const [userVote, setUserVote] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [finalEstimate, setFinalEstimate] = useState('');
   const [error, setError] = useState('');
+  const [connectedUsers, setConnectedUsers] = useState<string[]>([]);
 
   const fibonacciNumbers = ['1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'];
 
@@ -35,20 +34,30 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     // WebSocket bağlantısını kur
     PokerWebSocketService.connect(token);
 
-    // Takım poker odasına abone ol
-    PokerWebSocketService.subscribeToTeamPoker(teamId, handlePokerMessage);
+    // Bağlantı kurulana kadar bekle
+    const checkConnection = setInterval(() => {
+      if (PokerWebSocketService.isConnectionActive()) {
+        clearInterval(checkConnection);
 
-    // Odaya katıl
-    PokerWebSocketService.sendJoinMessage(teamId, userId, userName);
+        // Takım poker odasına abone ol
+        PokerWebSocketService.subscribeToTeamPoker(teamId, handlePokerMessage);
 
-    // Aktif oturumu getir
-    loadActiveSession();
+        // Odaya katıl
+        PokerWebSocketService.sendJoinMessage(teamId, userId, userName);
+
+        // Aktif oturumu getir
+        loadActiveSession();
+      }
+    }, 100);
 
     return () => {
+      clearInterval(checkConnection);
       // Temizlik
-      PokerWebSocketService.sendLeaveMessage(teamId, userId, userName);
-      PokerWebSocketService.unsubscribeFromTeamPoker(teamId);
-      PokerWebSocketService.disconnect();
+      if (PokerWebSocketService.isConnectionActive()) {
+        PokerWebSocketService.sendLeaveMessage(teamId, userId, userName);
+        PokerWebSocketService.unsubscribeFromTeamPoker(teamId);
+        PokerWebSocketService.disconnect();
+      }
     };
   }, [teamId, token, userId, userName]);
 
@@ -58,28 +67,74 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     switch (message.type) {
       case 'SESSION_CREATED':
       case 'SESSION_UPDATED':
-        setSession(message.data);
-        setVotes(message.data.votes || []);
+        setSession(message.data || message.session);
+        setVotes(message.data?.votes || message.session?.votes || []);
+        setError('');
         break;
+
       case 'VOTE_CAST':
-        updateVotes(message.data);
+      case 'VOTE_UPDATED':
+        if (message.data) {
+          updateVotes(message.data);
+        }
+        setError('');
         break;
+
       case 'VOTES_REVEALED':
-        setSession(message.data);
-        setVotes(message.data.votes || []);
+        if (message.data || message.session) {
+          const sessionData = message.data || message.session;
+          setSession(sessionData);
+          setVotes(sessionData.votes || []);
+        }
+        setError('');
         break;
+
       case 'SESSION_COMPLETED':
-        setSession(message.data);
+        if (message.data || message.session) {
+          setSession(message.data || message.session);
+        }
+        setError('');
         break;
+
+      case 'VOTING_STARTED':
+        if (message.data || message.session) {
+          const sessionData = message.data || message.session;
+          setSession(sessionData);
+          setVotes(sessionData.votes || []);
+          setUserVote(null); // Yeni oylama başladığında mevcut oyu temizle
+        }
+        setError('');
+        break;
+
       case 'USER_JOINED':
+      case 'JOIN_ROOM':
         console.log(`${message.userName} poker odasına katıldı`);
+        if (message.userName && !connectedUsers.includes(message.userName)) {
+          setConnectedUsers(prev => [...prev, message.userName]);
+        }
         break;
+
       case 'USER_LEFT':
+      case 'LEAVE_ROOM':
         console.log(`${message.userName} poker odasından ayrıldı`);
+        if (message.userName) {
+          setConnectedUsers(prev => prev.filter(user => user !== message.userName));
+        }
         break;
+
       case 'ERROR':
-        setError(message.message || 'Bir hata oluştu');
+        setError(message.message || message.error || 'Bir hata oluştu');
+        setLoading(false);
         break;
+
+      case 'CONNECTION_STATUS':
+        if (message.connectedUsers) {
+          setConnectedUsers(message.connectedUsers);
+        }
+        break;
+
+      default:
+        console.log('Bilinmeyen mesaj türü:', message.type);
     }
   };
 
@@ -118,6 +173,8 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
         setSession(response.data);
         setVotes([]);
         setUserVote(null);
+
+        // WebSocket üzerinden bildirim gönderilecek, burada ekstra bir şey yapmamıza gerek yok
       } else {
         setError(response.error || 'Oturum oluşturulamadı');
       }
@@ -136,6 +193,10 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     setError('');
 
     try {
+      // WebSocket üzerinden oy mesajı gönder
+      PokerWebSocketService.sendVoteMessage(teamId, session.id, voteValue);
+
+      // API çağrısı da yap (backend'de hem HTTP hem WebSocket desteklenir)
       const response = await pokerApiService.castVote({
         sessionId: session.id,
         voteValue
@@ -161,12 +222,20 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     setError('');
 
     try {
+      // WebSocket üzerinden reveal mesajı gönder
+      PokerWebSocketService.sendRevealMessage(teamId, session.id);
+
+      // API çağrısı da yap
       const response = await pokerApiService.revealVotes(session.id);
-      if (response.success && response.data) {
-        setSession(response.data);
-        setVotes(response.data.votes || []);
-      } else {
+      if (!response.success) {
         setError(response.error || 'Oylar açılamadı');
+      } else {
+        // Oylar açıldığında otomatik olarak ortalamaya en yakın değeri final tahmin olarak ayarla
+        const average = calculateAverageNumber();
+        if (average > 0) {
+          const closestFibonacci = getClosestFibonacci(average);
+          setFinalEstimate(closestFibonacci.toString());
+        }
       }
     } catch (error) {
       setError('Oylar açılırken bir hata oluştu');
@@ -183,10 +252,12 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     setError('');
 
     try {
+      // WebSocket üzerinden complete mesajı gönder
+      PokerWebSocketService.sendCompleteSessionMessage(teamId, session.id, finalEstimate);
+
+      // API çağrısı da yap
       const response = await pokerApiService.completeSession(session.id, finalEstimate);
-      if (response.success && response.data) {
-        setSession(response.data);
-      } else {
+      if (!response.success) {
         setError(response.error || 'Oturum tamamlanamadı');
       }
     } catch (error) {
@@ -224,12 +295,14 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     setError('');
 
     try {
+      // WebSocket üzerinden start voting mesajı gönder
+      PokerWebSocketService.sendStartVotingMessage(teamId, session.id);
+
+      // API çağrısı da yap
       const response = await pokerApiService.startVoting(session.id);
       console.log('StartVoting Response:', response);
 
-      if (response.success && response.data) {
-        setSession(response.data);
-      } else {
+      if (!response.success) {
         // Token geçersizse localStorage'ı temizle
         if (response.error?.includes('token') || response.error?.includes('authentication')) {
           localStorage.removeItem('token');
@@ -242,6 +315,42 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     } catch (error) {
       console.error('StartVoting Error:', error);
       setError('Oylama başlatılırken bir hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startNewSession = async () => {
+    console.log('Yeni oturum başlatılıyor...');
+
+    setLoading(true);
+    setError('');
+
+    try {
+      // Otomatik benzersiz değerlerle yeni oturum oluştur
+      const currentDate = new Date();
+      const sessionNumber = Math.floor(Math.random() * 1000) + 1;
+
+      const newSessionData = {
+        teamId: teamId,
+        storyTitle: `Poker Oturumu #${sessionNumber}`,
+        storyDescription: `${currentDate.toLocaleDateString('tr-TR')} - ${currentDate.toLocaleTimeString('tr-TR')} tarihinde başlatılan poker oturumu`
+      };
+
+      const response = await pokerApiService.createSession(newSessionData);
+
+      if (response.success && response.data) {
+        setSession(response.data);
+        setVotes([]);
+        setUserVote(null);
+        setFinalEstimate('');
+        console.log('Yeni oturum başarıyla oluşturuldu:', response.data);
+      } else {
+        setError(response.error || 'Yeni oturum oluşturulamadı');
+      }
+    } catch (error) {
+      setError('Yeni oturum oluşturulurken bir hata oluştu');
+      console.error('Yeni oturum oluşturulamadı:', error);
     } finally {
       setLoading(false);
     }
@@ -288,6 +397,27 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
     return (sum / numericVotes.length).toFixed(1);
   };
 
+  // Ortalamayı sayı olarak hesapla (getClosestFibonacci için)
+  const calculateAverageNumber = () => {
+    const numericVotes = votes
+      .filter(vote => vote.voteValue !== '?' && !isNaN(Number(vote.voteValue)))
+      .map(vote => Number(vote.voteValue));
+
+    if (numericVotes.length === 0) return 0;
+
+    const sum = numericVotes.reduce((acc, val) => acc + val, 0);
+    return sum / numericVotes.length;
+  };
+
+  // Ortalamaya en yakın Fibonacci sayısını bul
+  const getClosestFibonacci = (average: number) => {
+    const fibNumbers = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+
+    return fibNumbers.reduce((closest, current) => {
+      return Math.abs(current - average) < Math.abs(closest - average) ? current : closest;
+    });
+  };
+
   if (!session) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -303,6 +433,26 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
           </button>
         </div>
 
+        {/* Bağlı kullanıcılar */}
+        {connectedUsers.length > 0 && (
+          <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-blue-900 mb-2">
+              Poker Odasındaki Kullanıcılar ({connectedUsers.length})
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {connectedUsers.map((user, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
+                  <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                  {user}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="text-center py-12">
           <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -312,21 +462,16 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
             Story point tahminlemesi için yeni bir poker oturumu başlatın.
           </p>
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
+            onClick={startNewSession}
+            disabled={loading}
+            className="mt-6 inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            Poker Oturumu Başlat
+            {loading ? 'Oturum başlatılıyor...' : 'Poker Oturumu Başlat'}
           </button>
         </div>
-
-        <CreatePokerSessionModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSessionCreated={createSession}
-        />
       </div>
     );
   }
@@ -348,6 +493,26 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
       {error && (
         <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
           {error}
+        </div>
+      )}
+
+      {/* Bağlı kullanıcılar */}
+      {connectedUsers.length > 0 && (
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-blue-900 mb-2">
+            Poker Odasındaki Kullanıcılar ({connectedUsers.length})
+          </h4>
+          <div className="flex flex-wrap gap-2">
+            {connectedUsers.map((user, index) => (
+              <span
+                key={index}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+              >
+                <span className="w-2 h-2 bg-green-400 rounded-full mr-1"></span>
+                {user}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -401,24 +566,83 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
         <h4 className="text-lg font-medium text-gray-900 mb-4">
           Oylar ({votes.length})
         </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {votes.map(vote => (
-            <div key={vote.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-900">
-                {vote.user.firstName} {vote.user.lastName}
-              </span>
-              <span className={`
-                px-3 py-1 rounded-full text-sm font-bold
-                ${vote.isRevealed 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-blue-100 text-blue-800'
-                }
-              `}>
-                {vote.isRevealed ? vote.voteValue : '?'}
-              </span>
-            </div>
-          ))}
-        </div>
+        
+        {session.status === 'REVEALED' ? (
+          // Oylar açıldığında - detaylı görünüm
+          <div className="space-y-3">
+            {votes.map(vote => (
+              <div key={vote.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-l-4 border-green-500">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                    <span className="text-green-800 font-semibold text-sm">
+                      {vote.user.firstName.charAt(0)}{vote.user.lastName.charAt(0)}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {vote.user.firstName} {vote.user.lastName}
+                    </p>
+                    <p className="text-xs text-gray-500">Oy verdi</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl font-bold text-green-600">
+                    {vote.voteValue}
+                  </span>
+                  <span className="text-sm text-gray-500">point</span>
+                </div>
+              </div>
+            ))}
+            
+            {/* Oylama istatistikleri */}
+            {votes.length > 0 && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                <h5 className="text-sm font-medium text-blue-900 mb-3">Oylama İstatistikleri</h5>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{calculateAverage()}</p>
+                    <p className="text-xs text-blue-800">Ortalama</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">
+                      {Math.min(...votes.filter(v => v.voteValue !== '?' && !isNaN(Number(v.voteValue))).map(v => Number(v.voteValue))) || 0}
+                    </p>
+                    <p className="text-xs text-blue-800">En Düşük</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">
+                      {Math.max(...votes.filter(v => v.voteValue !== '?' && !isNaN(Number(v.voteValue))).map(v => Number(v.voteValue))) || 0}
+                    </p>
+                    <p className="text-xs text-blue-800">En Yüksek</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Oylar açılmadığında - basit görünüm
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {votes.map(vote => (
+              <div key={vote.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <span className="text-sm font-medium text-gray-900">
+                  {vote.user.firstName} {vote.user.lastName}
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-bold bg-blue-100 text-blue-800">
+                  ?
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {votes.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="mt-2">Henüz oy kullanan yok</p>
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -460,6 +684,16 @@ const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, o
               {loading ? 'Tamamlanıyor...' : 'Oturumu Tamamla'}
             </button>
           </div>
+        )}
+
+        {session.createdBy?.id === userId && session.status === 'COMPLETED' && (
+          <button
+            onClick={startNewSession}
+            disabled={loading}
+            className="px-6 py-3 bg-yellow-600 text-white rounded-md hover:bg-yellow-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? 'Yeni tur başlatılıyor...' : 'Yeni Tur Başlat'}
+          </button>
         )}
 
         {session.status === 'COMPLETED' && (
