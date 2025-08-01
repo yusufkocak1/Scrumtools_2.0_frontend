@@ -1,0 +1,126 @@
+{
+  "createRetrospective": {
+    "endpoint": "POST /api/retrospective/sessions",
+    "request": {
+      "teamId": "string",
+      "title": "string",
+      "sprintNumber": "number",
+      "template": "string"
+    },
+    "responses": {
+      "success": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "title": "string",
+            "teamId": "string",
+            "sprintNumber": "number",
+            "template": "string",
+            "status": "active",
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "addRetrospectiveItem": {
+    "endpoint": "POST /api/retrospective/sessions/{id}/items",
+    "request": {
+      "category": "string",
+      "content": "string",
+      "type": "positive|negative|action"
+    },
+    "responses": {
+      "success": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "content": "string",
+            "category": "string",
+            "type": "string",
+            "votes": 0,
+            "authorId": "string",
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "voteRetrospectiveItem": {
+    "endpoint": "POST /api/retrospective/items/{id}/vote",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "votes": "number"
+          }
+        }
+      }
+    }
+  },
+  "createActionItem": {
+    "endpoint": "POST /api/retrospective/sessions/{id}/actions",
+    "request": {
+      "title": "string",
+      "description": "string",
+      "assigneeId": "string",
+      "priority": "high|medium|low"
+    },
+    "responses": {
+      "success": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "title": "string",
+            "description": "string",
+            "assigneeId": "string",
+            "priority": "string",
+            "status": "pending",
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "getRetrospectiveResults": {
+    "endpoint": "GET /api/retrospective/sessions/{id}/results",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "id": "string",
+                "content": "string",
+                "category": "string",
+                "type": "string",
+                "votes": "number"
+              }
+            ],
+            "actionItems": [
+              {
+                "id": "string",
+                "title": "string",
+                "description": "string",
+                "assignee": "string",
+                "priority": "string",
+                "status": "string"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}
+

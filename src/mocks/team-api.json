@@ -1,0 +1,145 @@
+{
+  "createTeam": {
+    "endpoint": "POST /api/teams",
+    "request": {
+      "name": "string",
+      "description": "string",
+      "members": ["string"]
+    },
+    "responses": {
+      "success": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "createdBy": "string",
+            "members": [
+              {
+                "id": "string",
+                "email": "string",
+                "firstName": "string",
+                "lastName": "string",
+                "role": "string"
+              }
+            ],
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "getTeams": {
+    "endpoint": "GET /api/teams",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": [
+            {
+              "id": "string",
+              "name": "string",
+              "description": "string",
+              "memberCount": "number",
+              "createdAt": "string"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "getTeamDetails": {
+    "endpoint": "GET /api/teams/{id}",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "members": [
+              {
+                "id": "string",
+                "email": "string",
+                "firstName": "string",
+                "lastName": "string",
+                "role": "string"
+              }
+            ],
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "joinTeamByCode": {
+    "endpoint": "POST /api/teams/join",
+    "request": {
+      "teamCode": "string"
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "name": "string",
+            "description": "string",
+            "createdBy": "string",
+            "members": [
+              {
+                "id": "string",
+                "email": "string",
+                "firstName": "string",
+                "lastName": "string",
+                "role": "string"
+              }
+            ],
+            "createdAt": "string"
+          }
+        }
+      },
+      "error": {
+        "status": 404,
+        "body": {
+          "success": false,
+          "error": "Geçersiz takım kodu"
+        }
+      }
+    }
+  },
+  "addTeamMember": {
+    "endpoint": "POST /api/teams/{id}/members",
+    "request": {
+      "email": "string",
+      "role": "string"
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Üye başarıyla eklendi"
+        }
+      }
+    }
+  },
+  "removeTeamMember": {
+    "endpoint": "DELETE /api/teams/{id}/members/{memberId}",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Üye başarıyla çıkarıldı"
+        }
+      }
+    }
+  }
+}

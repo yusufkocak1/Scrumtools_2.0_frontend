@@ -1,0 +1,108 @@
+{
+  "createPokerSession": {
+    "endpoint": "POST /api/poker/sessions",
+    "request": {
+      "teamId": "string",
+      "title": "string",
+      "stories": [
+        {
+          "title": "string",
+          "description": "string"
+        }
+      ]
+    },
+    "responses": {
+      "success": {
+        "status": 201,
+        "body": {
+          "success": true,
+          "data": {
+            "id": "string",
+            "title": "string",
+            "teamId": "string",
+            "stories": [
+              {
+                "id": "string",
+                "title": "string",
+                "description": "string",
+                "estimate": null
+              }
+            ],
+            "status": "waiting",
+            "createdAt": "string"
+          }
+        }
+      }
+    }
+  },
+  "joinPokerSession": {
+    "endpoint": "POST /api/poker/sessions/{id}/join",
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Oturuma katıldınız"
+        }
+      }
+    }
+  },
+  "submitVote": {
+    "endpoint": "POST /api/poker/sessions/{id}/vote",
+    "request": {
+      "storyId": "string",
+      "estimate": "number"
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Oy verildi"
+        }
+      }
+    }
+  },
+  "revealVotes": {
+    "endpoint": "POST /api/poker/sessions/{id}/reveal",
+    "request": {
+      "storyId": "string"
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "data": {
+            "votes": [
+              {
+                "userId": "string",
+                "userName": "string",
+                "estimate": "number"
+              }
+            ],
+            "average": "number",
+            "consensus": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "finalizeEstimate": {
+    "endpoint": "POST /api/poker/sessions/{id}/finalize",
+    "request": {
+      "storyId": "string",
+      "finalEstimate": "number"
+    },
+    "responses": {
+      "success": {
+        "status": 200,
+        "body": {
+          "success": true,
+          "message": "Tahmin kesinleştirildi"
+        }
+      }
+    }
+  }
+}
+
