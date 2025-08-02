@@ -18,6 +18,9 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
   const [generatingCode, setGeneratingCode] = useState(false);
 
   const loadPendingMembers = useCallback(async () => {
+    // Sadece admin ise pending members'ı yükle
+    if (userRole !== 'ADMIN') return;
+
     try {
       const result = await teamService.getPendingMembers(team.id);
       if (result.success && result.data) {
@@ -26,16 +29,16 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
     } catch (error) {
       console.error('Error loading pending members:', error);
     }
-  }, [team.id]);
+  }, [team.id, userRole]);
+
+  useEffect(() => {
+    loadPendingMembers();
+  }, [loadPendingMembers]);
 
   // Admin değilse bu paneli gösterme
   if (userRole !== 'ADMIN') {
     return null;
   }
-
-  useEffect(() => {
-    loadPendingMembers();
-  }, [loadPendingMembers]);
 
   const handleApproveMember = async (memberId: string, role: string) => {
     setLoading(true);
@@ -165,11 +168,15 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
                 <div className="flex items-center space-x-2">
                   <select
                     className="text-sm border border-gray-300 rounded px-2 py-1"
-                    defaultValue="MEMBER"
+                    defaultValue="OBSERVER"
                     id={`role-${member.id}`}
                   >
-                    <option value="MEMBER">Üye</option>
+                    <option value="OBSERVER">Gözlemci</option>
                     <option value="ADMIN">Admin</option>
+                    <option value="DEVELOPER">Geliştirici</option>
+                    <option value="ANALYST">Analist</option>
+                    <option value="TESTER">Tester</option>
+                    <option value="TECHNICAL_LEAD">Teknik Lider</option>
                     <option value="SCRUM_MASTER">Scrum Master</option>
                     <option value="PRODUCT_OWNER">Product Owner</option>
                   </select>

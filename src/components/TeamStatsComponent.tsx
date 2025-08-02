@@ -7,12 +7,6 @@ interface TeamStatsComponentProps {
 }
 
 const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditClick }) => {
-  const copyInviteCode = () => {
-    if (team.inviteCode) {
-      navigator.clipboard.writeText(team.inviteCode);
-      // TODO: Show toast notification
-    }
-  };
 
   return (
     <div className="bg-white rounded-lg shadow h-full">
@@ -43,36 +37,6 @@ const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditCli
               <p className="text-gray-600 leading-relaxed">{team.description}</p>
             )}
           </div>
-
-          {/* Team Invite Code */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Takım Davet Kodu
-            </label>
-            <div className="flex items-center space-x-3">
-              <div className="flex-1 min-w-0">
-                <input
-                  type="text"
-                  value={team.inviteCode}
-                  readOnly
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-gray-900 focus:outline-none"
-                />
-              </div>
-              <button
-                onClick={copyInviteCode}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                title="Kodu kopyala"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </button>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              Bu kodu paylaşarak takımınıza yeni üyeler davet edebilirsiniz.
-            </p>
-          </div>
-
           {/* Team Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
             {/* Member Count */}

@@ -44,7 +44,6 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
       'ANALYST': 'bg-pink-100 text-pink-800',
       'TECHNICAL_LEAD': 'bg-red-100 text-red-800',
       'OBSERVER': 'bg-gray-100 text-gray-800',
-      'MEMBER': 'bg-gray-100 text-gray-800'
     };
 
     return roleColors[role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800';
@@ -59,7 +58,7 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
       'TESTER': 'Test Uzmanı',
       'ANALYST': 'Analist',
       'TECHNICAL_LEAD': 'Teknik Lider',
-      'MEMBER': 'Üye'
+      'PRODUCT_OWNER': 'Ürün Sahibi',
     };
 
     return roleLabels[role as keyof typeof roleLabels] || 'Üye';
