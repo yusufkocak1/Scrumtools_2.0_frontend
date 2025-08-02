@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { teamService, type Team, type TeamDetails, type TeamMember } from '../services/teamService';
-import CreateTeamModal from '../components/CreateTeamModal';
-import JoinTeamModal from '../components/JoinTeamModal';
+import TeamActionModal from '../components/TeamActionModal';
 import TeamMembersComponent from '../components/TeamMembersComponent';
 import TeamStatsComponent from '../components/TeamStatsComponent';
 import TeamManagementPanel from '../components/TeamManagementPanel';
+import DashboardHeader from '../components/DashboardHeader';
 
 interface User {
   email: string;
@@ -22,8 +22,7 @@ const Dashboard: React.FC = () => {
   const [userRole, setUserRole] = useState<string>('MEMBER');
   const [loading, setLoading] = useState(false);
   const [teamsLoading, setTeamsLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showTeamActionModal, setShowTeamActionModal] = useState(false);
   const navigate = useNavigate();
 
   const loadUserTeams = useCallback(async () => {
@@ -168,27 +167,12 @@ const Dashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <header className="bg-white shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-2xl font-bold text-gray-900">Scrum Tools</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-gray-700">
-                  Merhaba, {user.firstName} {user.lastName}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  disabled={loading}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Çıkış yapılıyor...' : 'Çıkış Yap'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <DashboardHeader
+          user={user}
+          loading={loading}
+          onCreateTeam={() => setShowTeamActionModal(true)}
+          onLogout={handleLogout}
+        />
 
         {/* No Team Content */}
         <main className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
@@ -203,7 +187,7 @@ const Dashboard: React.FC = () => {
 
             <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
               <button
-                onClick={() => setShowCreateModal(true)}
+                onClick={() => setShowTeamActionModal(true)}
                 className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -213,7 +197,7 @@ const Dashboard: React.FC = () => {
               </button>
 
               <button
-                onClick={() => setShowJoinModal(true)}
+                onClick={() => setShowTeamActionModal(true)}
                 className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,14 +210,10 @@ const Dashboard: React.FC = () => {
         </main>
 
         {/* Modals */}
-        <CreateTeamModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+        <TeamActionModal
+          isOpen={showTeamActionModal}
+          onClose={() => setShowTeamActionModal(false)}
           onTeamCreated={handleTeamCreated}
-        />
-        <JoinTeamModal
-          isOpen={showJoinModal}
-          onClose={() => setShowJoinModal(false)}
           onTeamJoined={handleTeamJoined}
         />
       </div>
@@ -244,82 +224,16 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-900">Scrum Tools</h1>
-              {/* Team Selector */}
-              {teams.length > 0 && (
-                <div className="flex items-center space-x-4">
-                  <div className="relative">
-                    <select
-                      value={selectedTeam?.id || ''}
-                      onChange={(e) => {
-                        const team = teams.find(t => t.id === e.target.value);
-                        if (team) handleTeamSelect(team);
-                      }}
-                      className="appearance-none bg-gray-50 border border-gray-300 rounded-md px-3 py-2 pr-8 text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      {teams.map(team => (
-                        <option key={team.id} value={team.id}>
-                          {team.name}
-                        </option>
-                      ))}
-                    </select>
-                    <svg className="absolute right-2 top-3 h-4 w-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-
-                  {/* Davet Kodu Gösterimi */}
-                  {userRole === 'ADMIN' && (
-                    <div className="flex items-center space-x-2 bg-blue-50 px-3 py-2 rounded-md">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-6 6c-3 0-5.5-1.5-5.5-4a3.5 3.5 0 117 0A6 6 0 0112 15a6 6 0 01-6-6 2 2 0 012-2m6 0a2 2 0 012 2m4 0a6 6 0 01-6 6c-3 0-5.5-1.5-5.5-4a3.5 3.5 0 117 0A6 6 0 0112 15a6 6 0 01-6-6 2 2 0 012-2" />
-                      </svg>
-                      <span className="text-sm text-blue-700">Davet Kodu:</span>
-                      <span className="text-sm font-mono font-semibold text-blue-800">
-                        {selectedTeam.inviteCode}
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(selectedTeam.inviteCode);
-                          alert('Davet kodu kopyalandı!');
-                        }}
-                        className="text-blue-600 hover:text-blue-800"
-                        title="Davet kodunu kopyala"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="text-indigo-600 hover:text-indigo-500 text-sm font-medium"
-              >
-                + Yeni Takım
-              </button>
-              <span className="text-gray-700">
-                Merhaba, {user.firstName} {user.lastName}
-              </span>
-              <button
-                onClick={handleLogout}
-                disabled={loading}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Çıkış yapılıyor...' : 'Çıkış Yap'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader
+        user={user}
+        teams={teams}
+        selectedTeam={selectedTeam}
+        userRole={userRole}
+        loading={loading}
+        onTeamSelect={handleTeamSelect}
+        onCreateTeam={() => setShowTeamActionModal(true)}
+        onLogout={handleLogout}
+      />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
@@ -473,14 +387,10 @@ const Dashboard: React.FC = () => {
       </main>
 
       {/* Modals */}
-      <CreateTeamModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+      <TeamActionModal
+        isOpen={showTeamActionModal}
+        onClose={() => setShowTeamActionModal(false)}
         onTeamCreated={handleTeamCreated}
-      />
-      <JoinTeamModal
-        isOpen={showJoinModal}
-        onClose={() => setShowJoinModal(false)}
         onTeamJoined={handleTeamJoined}
       />
     </div>
