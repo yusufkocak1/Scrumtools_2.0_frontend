@@ -36,13 +36,15 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
 
   const getRoleColor = (role: string) => {
     const roleColors = {
-      'owner': 'bg-red-100 text-red-800',
-      'admin': 'bg-purple-100 text-purple-800',
-      'scrum_master': 'bg-blue-100 text-blue-800',
-      'developer': 'bg-green-100 text-green-800',
-      'tester': 'bg-yellow-100 text-yellow-800',
-      'designer': 'bg-pink-100 text-pink-800',
-      'member': 'bg-gray-100 text-gray-800'
+      'ADMIN': 'bg-purple-100 text-purple-800',
+      'SCRUM_MASTER': 'bg-blue-100 text-blue-800',
+      'PRODUCT_OWNER': 'bg-indigo-100 text-indigo-800',
+      'DEVELOPER': 'bg-green-100 text-green-800',
+      'TESTER': 'bg-yellow-100 text-yellow-800',
+      'ANALYST': 'bg-pink-100 text-pink-800',
+      'TECHNICAL_LEAD': 'bg-red-100 text-red-800',
+      'OBSERVER': 'bg-gray-100 text-gray-800',
+      'MEMBER': 'bg-gray-100 text-gray-800'
     };
 
     return roleColors[role as keyof typeof roleColors] || 'bg-gray-100 text-gray-800';
@@ -61,6 +63,26 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
     };
 
     return roleLabels[role as keyof typeof roleLabels] || 'Üye';
+  };
+
+  const getStatusColor = (status: string) => {
+    const statusColors = {
+      'ACTIVE': 'bg-green-100 text-green-800',
+      'PENDING': 'bg-yellow-100 text-yellow-800',
+      'REJECTED': 'bg-red-100 text-red-800'
+    };
+
+    return statusColors[status as keyof typeof statusColors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusLabel = (status: string) => {
+    const statusLabels = {
+      'ACTIVE': 'Aktif',
+      'PENDING': 'Beklemede',
+      'REJECTED': 'Reddedildi'
+    };
+
+    return statusLabels[status as keyof typeof statusLabels] || 'Bilinmiyor';
   };
 
   if (loading) {
@@ -129,13 +151,19 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(member.role)}`}>
                       {getRoleLabel(member.role)}
                     </span>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(member.status)}`}>
+                      {getStatusLabel(member.status)}
+                    </span>
                   </div>
                   <p className="text-sm text-gray-500 truncate">{member.email}</p>
                 </div>
 
                 {/* Status Indicator */}
                 <div className="flex-shrink-0">
-                  <div className="w-2 h-2 bg-green-400 rounded-full" title="Çevrimiçi"></div>
+                  <div className={`w-3 h-3 rounded-full ${
+                    member.status === 'ACTIVE' ? 'bg-green-400' : 
+                    member.status === 'PENDING' ? 'bg-yellow-400' : 'bg-red-400'
+                  }`} title={getStatusLabel(member.status)}></div>
                 </div>
               </div>
             ))}

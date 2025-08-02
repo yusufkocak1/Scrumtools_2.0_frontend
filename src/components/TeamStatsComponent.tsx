@@ -7,6 +7,13 @@ interface TeamStatsComponentProps {
 }
 
 const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditClick }) => {
+  const copyInviteCode = () => {
+    if (team.inviteCode) {
+      navigator.clipboard.writeText(team.inviteCode);
+      // TODO: Show toast notification
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow h-full">
       {/* Header */}
@@ -37,6 +44,35 @@ const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditCli
             )}
           </div>
 
+          {/* Team Invite Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Takım Davet Kodu
+            </label>
+            <div className="flex items-center space-x-3">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  value={team.inviteCode}
+                  readOnly
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-sm font-mono text-gray-900 focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={copyInviteCode}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                title="Kodu kopyala"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              </button>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Bu kodu paylaşarak takımınıza yeni üyeler davet edebilirsiniz.
+            </p>
+          </div>
+
           {/* Team Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
             {/* Member Count */}
@@ -44,12 +80,12 @@ const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditCli
               <div className="flex items-center">
                 <div className="flex-shrink-0">
                   <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-blue-900">Toplam Üye</p>
-                  <p className="text-2xl font-bold text-blue-600">{team.memberCount || 0}</p>
+                  <p className="text-2xl font-bold text-blue-600">{team.members?.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -100,31 +136,6 @@ const TeamStatsComponent: React.FC<TeamStatsComponentProps> = ({ team, onEditCli
             </div>
           </div>
 
-          {/* Team Code */}
-          <div className="border-t border-gray-200 pt-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Takım Kodu</p>
-                  <p className="text-lg font-mono text-gray-600">{team.teamCode || 'Yükleniyor...'}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    if (team.teamCode) {
-                      navigator.clipboard.writeText(team.teamCode);
-                    }
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-                  title="Takım kodunu kopyala"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">Bu kodu kullanarak başkaları takımınıza katılabilir</p>
-            </div>
-          </div>
 
           {/* Created Date */}
           <div className="text-center pt-4 border-t border-gray-200">

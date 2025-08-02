@@ -9,7 +9,9 @@ export interface Team {
   id: string;
   name: string;
   description: string;
-  memberCount: number;
+  createdBy: string;
+  inviteCode: string;
+  members: TeamMember[];
   createdAt: string;
 }
 
@@ -18,13 +20,13 @@ export interface TeamMember {
   email: string;
   firstName: string;
   lastName: string;
+  roles: string[];
   role: string;
+  status: 'PENDING' | 'ACTIVE' | 'REJECTED';
 }
 
-export interface TeamDetails extends Omit<Team, 'memberCount'> {
-  createdBy: string;
-  members: TeamMember[];
-}
+// TeamDetails artık Team ile aynı olduğu için type alias olarak tanımlayalım
+export type TeamDetails = Team;
 
 export interface CreateTeamRequest {
   name: string;
@@ -62,7 +64,7 @@ export interface AddTeamMemberResponse {
 }
 
 export interface JoinTeamRequest {
-  teamCode: string;
+  inviteCode: string;
 }
 
 export interface JoinTeamResponse {
@@ -71,8 +73,36 @@ export interface JoinTeamResponse {
   error?: string;
 }
 
+export interface GenerateInviteCodeResponse {
+  success: boolean;
+  data?: { inviteCode: string };
+  error?: string;
+}
+
+export interface PendingMembersResponse {
+  success: boolean;
+  data?: TeamMember[];
+  error?: string;
+}
+
+export interface ApproveMemberRequest {
+  memberId: string;
+  role: string;
+}
+
+export interface ApproveMemberResponse {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
 // API Helper function
-const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
+const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<{
+  success: boolean;
+  data?: unknown;
+  error?: string;
+  message?: string;
+}> => {
   const url = `${API_BASE_URL}${endpoint}`;
   const token = localStorage.getItem('token');
 
@@ -173,6 +203,33 @@ export const teamService = {
     return apiCall('/api/teams/join', {
       method: 'POST',
       body: JSON.stringify(joinData),
+    });
+  },
+
+  // Davet kodu oluştur
+  generateInviteCode: async (teamId: string): Promise<GenerateInviteCodeResponse> => {
+    return apiCall(`/api/teams/${teamId}/invite-code`, {
+      method: 'POST',
+    });
+  },
+
+  // Bekleyen üyeleri getir
+  getPendingMembers: async (teamId: string): Promise<PendingMembersResponse> => {
+    return apiCall(`/api/teams/${teamId}/pending-members`);
+  },
+
+  // Üyeyi onayla
+  approveMember: async (teamId: string, memberData: ApproveMemberRequest): Promise<ApproveMemberResponse> => {
+    return apiCall(`/api/teams/${teamId}/approve-member`, {
+      method: 'POST',
+      body: JSON.stringify(memberData),
+    });
+  },
+
+  // Üyeyi reddet
+  rejectMember: async (teamId: string, memberId: string): Promise<ApproveMemberResponse> => {
+    return apiCall(`/api/teams/${teamId}/reject-member/${memberId}`, {
+      method: 'POST',
     });
   },
 
