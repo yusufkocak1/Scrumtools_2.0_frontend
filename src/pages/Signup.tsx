@@ -15,7 +15,7 @@ const Signup: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Eğer kullanıcı zaten giriş yapmışsa Dashboard'a yönlendir
+    // If user is already logged in, redirect to Dashboard
     if (authService.isAuthenticated()) {
       navigate('/dashboard');
     }
@@ -34,15 +34,15 @@ const Signup: React.FC = () => {
     setLoading(true);
     setError('');
 
-    // Form validasyonu
+    // Form validation
     if (formData.password !== formData.confirmPassword) {
-      setError('Şifreler eşleşmiyor');
+      setError('Passwords do not match');
       setLoading(false);
       return;
     }
 
     if (formData.password.length < 6) {
-      setError('Şifre en az 6 karakter olmalıdır');
+      setError('Password must be at least 6 characters long');
       setLoading(false);
       return;
     }
@@ -56,16 +56,16 @@ const Signup: React.FC = () => {
       });
 
       if (result.success && result.data) {
-        // Token ve user bilgilerini localStorage'a kaydet
+        // Save token and user info to localStorage
         authService.setAuthData(result.data.token, result.data.user);
 
-        // Dashboard'a yönlendir
+        // Redirect to Dashboard
         navigate('/dashboard');
       } else {
-        setError(result.error || 'Kayıt olurken bir hata oluştu');
+        setError(result.error || 'An error occurred during registration');
       }
     } catch (err) {
-      setError('Beklenmeyen bir hata oluştu');
+      setError('An unexpected error occurred');
       console.error('Signup error:', err);
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ const Signup: React.FC = () => {
             Scrum Tools
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Yeni hesap oluşturun
+            Create your new account
           </p>
         </div>
 
@@ -95,7 +95,7 @@ const Signup: React.FC = () => {
             <div className="flex space-x-4">
               <div className="flex-1">
                 <label htmlFor="firstName" className="sr-only">
-                  Ad
+                  First Name
                 </label>
                 <input
                   id="firstName"
@@ -103,14 +103,14 @@ const Signup: React.FC = () => {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder="Ad"
+                  placeholder="First Name"
                   value={formData.firstName}
                   onChange={handleInputChange}
                 />
               </div>
               <div className="flex-1">
                 <label htmlFor="lastName" className="sr-only">
-                  Soyad
+                  Last Name
                 </label>
                 <input
                   id="lastName"
@@ -118,7 +118,7 @@ const Signup: React.FC = () => {
                   type="text"
                   required
                   className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  placeholder="Soyad"
+                  placeholder="Last Name"
                   value={formData.lastName}
                   onChange={handleInputChange}
                 />
@@ -127,7 +127,7 @@ const Signup: React.FC = () => {
 
             <div>
               <label htmlFor="email" className="sr-only">
-                E-posta adresi
+                Email address
               </label>
               <input
                 id="email"
@@ -136,7 +136,7 @@ const Signup: React.FC = () => {
                 autoComplete="email"
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="E-posta adresi"
+                placeholder="Email address"
                 value={formData.email}
                 onChange={handleInputChange}
               />
@@ -144,7 +144,7 @@ const Signup: React.FC = () => {
 
             <div>
               <label htmlFor="password" className="sr-only">
-                Şifre
+                Password
               </label>
               <input
                 id="password"
@@ -153,7 +153,7 @@ const Signup: React.FC = () => {
                 autoComplete="new-password"
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Şifre"
+                placeholder="Password"
                 value={formData.password}
                 onChange={handleInputChange}
               />
@@ -161,7 +161,7 @@ const Signup: React.FC = () => {
 
             <div>
               <label htmlFor="confirmPassword" className="sr-only">
-                Şifre Tekrar
+                Confirm Password
               </label>
               <input
                 id="confirmPassword"
@@ -170,7 +170,7 @@ const Signup: React.FC = () => {
                 autoComplete="new-password"
                 required
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                placeholder="Şifre Tekrar"
+                placeholder="Confirm Password"
                 value={formData.confirmPassword}
                 onChange={handleInputChange}
               />
@@ -186,10 +186,10 @@ const Signup: React.FC = () => {
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
             />
             <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
+              I agree to the{' '}
               <Link to="#" className="text-indigo-600 hover:text-indigo-500">
-                Kullanım koşullarını
-              </Link>{' '}
-              kabul ediyorum
+                Terms of Service
+              </Link>
             </label>
           </div>
 
@@ -199,15 +199,15 @@ const Signup: React.FC = () => {
               disabled={loading}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Kayıt olunuyor...' : 'Kayıt Ol'}
+              {loading ? 'Creating account...' : 'Sign Up'}
             </button>
           </div>
 
           <div className="text-center">
             <span className="text-sm text-gray-600">
-              Zaten hesabınız var mı?{' '}
+              Already have an account?{' '}
               <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
-                Giriş yapın
+                Sign in
               </Link>
             </span>
           </div>
