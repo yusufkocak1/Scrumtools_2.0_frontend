@@ -1,4 +1,5 @@
 // Auth Service API Documentation
+import { apiService } from './apiService';
 
 // Login API
 export interface LoginRequest {
@@ -9,7 +10,7 @@ export interface LoginRequest {
 export interface LoginResponse {
   success: boolean;
   data?: {
-    user:User;
+    user: User;
     token: string;
   };
   error?: string;
@@ -26,7 +27,7 @@ export interface SignupRequest {
 export interface SignupResponse {
   success: boolean;
   data?: {
-    user:User;
+    user: User;
     token: string;
   };
   error?: string;
@@ -51,98 +52,28 @@ export interface UserProfileResponse {
   };
   error?: string;
 }
+
 export type User = {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    preferences:Map<string, string>;
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  preferences: Map<string, string>;
 }
-
-// API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-const API_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 10000;
-
-// API Helper function
-const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any> => {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    signal: AbortSignal.timeout(API_TIMEOUT), // Request timeout
-  };
-
-  const config = { ...defaultOptions, ...options };
-
-  try {
-    const response = await fetch(url, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.message || data.error || 'Bir hata oluştu'
-      };
-    }
-    console.log('API çağrısı başarılı:', { url, options, data });
-
-    return {
-      success: true,
-      ...data
-    };
-  } catch (error) {
-    console.error('API çağrısı hatası:', error);
-
-    if (error instanceof Error) {
-      if (error.name === 'TimeoutError') {
-        return {
-          success: false,
-          error: 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.'
-        };
-      }
-      if (error.name === 'TypeError') {
-        return {
-          success: false,
-          error: 'Sunucuya bağlanılamıyor. Backend servisinin çalıştığından emin olun.'
-        };
-      }
-    }
-
-    return {
-      success: false,
-      error: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
-    };
-  }
-};
 
 // Auth Service Implementation
 export const authService = {
   login: async (credentials: LoginRequest): Promise<LoginResponse> => {
-    return apiCall('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(credentials),
-    });
+    return apiService.post<LoginResponse['data']>('/api/auth/login', credentials);
   },
 
   signup: async (userData: SignupRequest): Promise<SignupResponse> => {
-    return apiCall('/api/auth/signup', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    return apiService.post<SignupResponse['data']>('/api/auth/signup', userData);
   },
 
   logout: async (): Promise<LogoutResponse> => {
-    const token = localStorage.getItem('token');
-
-    const result = await apiCall('/api/auth/logout', {
-      method: 'POST',
-      headers: {
-        'Authorization': token ? `Bearer ${token}` : '',
-      },
-    });
+    // @ts-ignore
+    const result = await apiService.post<LogoutResponse['data']>('/api/auth/logout');
 
     // Başarılı olsun ya da olmasın token'ı temizle
     localStorage.removeItem('token');
@@ -152,49 +83,55 @@ export const authService = {
   },
 
   getUserProfile: async (): Promise<UserProfileResponse> => {
-    const token = localStorage.getItem('token');
-
-    if (!token) {
-      return {
-        success: false,
-        error: 'Token bulunamadı'
-      };
-    }
-
-    return apiCall('/api/auth/profile', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
+    return apiService.get<UserProfileResponse['data']>('/api/auth/profile');
   },
 
-  // Kullanıcının giriş yapıp yapmadığını kontrol et
-  isAuthenticated: () => {
+  // Token kontrolü
+  isTokenValid: (): boolean => {
     const token = localStorage.getItem('token');
     return !!token;
   },
 
-  // Token ve user bilgilerini localStorage'dan al
-  getAuthData: () => {
+  // Kullanıcının kimlik doğrulaması yapılmış mı kontrol et
+  isAuthenticated: (): boolean => {
     const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-
-    const user = userStr ? JSON.parse(userStr) : null;
-
-    return { token, user };
+    const user = localStorage.getItem('user');
+    return !!(token && user);
   },
 
-  // Token ve user bilgilerini localStorage'a kaydet
+  // Auth verilerini getir
+  getAuthData: (): { user: User | null; token: string | null } => {
+    const token = localStorage.getItem('token');
+    const user = authService.getCurrentUser();
+    return { user, token };
+  },
+
+  // Auth verilerini kaydet (login sonrası)
   setAuthData: (token: string, user: User) => {
-    console.log('Saving auth data:', { token, user });
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
   },
 
-  // Auth verilerini temizle
-  clearAuthData: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  // Kullanıcı bilgilerini localStorage'dan getir
+  getCurrentUser: (): User | null => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      try {
+        return JSON.parse(userData);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  },
+
+  // Kullanıcı bilgilerini localStorage'a kaydet
+  setCurrentUser: (user: User) => {
+    localStorage.setItem('user', JSON.stringify(user));
+  },
+
+  // Token'ı localStorage'a kaydet
+  setToken: (token: string) => {
+    localStorage.setItem('token', token);
   }
 };

@@ -1,8 +1,5 @@
 // Team Service API Implementation
-
-// Environment Configuration
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-const API_TIMEOUT = import.meta.env.VITE_API_TIMEOUT || 10000;
+import { apiService } from './apiService';
 
 // Team Service Types
 export interface Team {
@@ -96,141 +93,56 @@ export interface ApproveMemberResponse {
   error?: string;
 }
 
-// API Helper function
-const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<{
-  success: boolean;
-  data?: unknown;
-  error?: string;
-  message?: string;
-}> => {
-  const url = `${API_BASE_URL}${endpoint}`;
-  const token = localStorage.getItem('token');
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
-  };
-
-  // Token varsa Authorization header'ına ekle
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const defaultOptions: RequestInit = {
-    headers,
-    signal: AbortSignal.timeout(API_TIMEOUT),
-  };
-
-  const config = { ...defaultOptions, ...options };
-
-  try {
-    const response = await fetch(url, config);
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.message || data.error || 'Bir hata oluştu'
-      };
-    }
-
-    return {
-      success: true,
-      ...data
-    };
-  } catch (error) {
-    console.error('API çağrısı hatası:', error);
-
-    if (error instanceof Error) {
-      if (error.name === 'TimeoutError') {
-        return {
-          success: false,
-          error: 'İstek zaman aşımına uğradı. Lütfen tekrar deneyin.'
-        };
-      }
-      if (error.name === 'TypeError') {
-        return {
-          success: false,
-          error: 'Sunucuya bağlanılamıyor. Backend servisinin çalıştığından emin olun.'
-        };
-      }
-    }
-
-    return {
-      success: false,
-      error: 'Beklenmeyen bir hata oluştu. Lütfen tekrar deneyin.'
-    };
-  }
-};
-
 // Team Service Implementation
 export const teamService = {
   // Kullanıcının üyesi olduğu takımları getir
   getUserTeams: async (): Promise<GetTeamsResponse> => {
-    return apiCall('/api/teams');
+    return apiService.get<Team[]>('/api/teams');
   },
 
   // Takım detaylarını getir
   getTeamDetails: async (teamId: string): Promise<GetTeamDetailsResponse> => {
-    return apiCall(`/api/teams/${teamId}`);
+    return apiService.get<TeamDetails>(`/api/teams/${teamId}`);
   },
 
   // Yeni takım oluştur
   createTeam: async (teamData: CreateTeamRequest): Promise<CreateTeamResponse> => {
-    return apiCall('/api/teams', {
-      method: 'POST',
-      body: JSON.stringify(teamData),
-    });
+    return apiService.post<TeamDetails>('/api/teams', teamData);
   },
 
   // Takıma üye ekle
   addTeamMember: async (teamId: string, memberData: AddTeamMemberRequest): Promise<AddTeamMemberResponse> => {
-    return apiCall(`/api/teams/${teamId}/members`, {
-      method: 'POST',
-      body: JSON.stringify(memberData),
-    });
+    return apiService.post(`/api/teams/${teamId}/members`, memberData);
   },
 
   // Takımdan üye çıkar
   removeTeamMember: async (teamId: string, memberId: string): Promise<AddTeamMemberResponse> => {
-    return apiCall(`/api/teams/${teamId}/members/${memberId}`, {
-      method: 'DELETE',
-    });
+    return apiService.delete(`/api/teams/${teamId}/members/${memberId}`);
   },
 
   // Takım koduna katıl
   joinTeamByCode: async (joinData: JoinTeamRequest): Promise<JoinTeamResponse> => {
-    return apiCall('/api/teams/join', {
-      method: 'POST',
-      body: JSON.stringify(joinData),
-    });
+    return apiService.post<TeamDetails>('/api/teams/join', joinData);
   },
 
   // Davet kodu oluştur
   generateInviteCode: async (teamId: string): Promise<GenerateInviteCodeResponse> => {
-    return apiCall(`/api/teams/${teamId}/invite-code`, {
-      method: 'POST',
-    });
+    return apiService.post<{ inviteCode: string }>(`/api/teams/${teamId}/invite-code`);
   },
 
   // Bekleyen üyeleri getir
   getPendingMembers: async (teamId: string): Promise<PendingMembersResponse> => {
-    return apiCall(`/api/teams/${teamId}/pending-members`);
+    return apiService.get<TeamMember[]>(`/api/teams/${teamId}/pending-members`);
   },
 
   // Üyeyi onayla
   approveMember: async (teamId: string, memberData: ApproveMemberRequest): Promise<ApproveMemberResponse> => {
-    return apiCall(`/api/teams/${teamId}/approve-member`, {
-      method: 'POST',
-      body: JSON.stringify(memberData),
-    });
+    return apiService.post(`/api/teams/${teamId}/approve-member`, memberData);
   },
 
   // Üyeyi reddet
   rejectMember: async (teamId: string, memberId: string): Promise<ApproveMemberResponse> => {
-    return apiCall(`/api/teams/${teamId}/reject-member/${memberId}`, {
-      method: 'POST',
-    });
+    return apiService.post(`/api/teams/${teamId}/reject-member/${memberId}`);
   },
 
   // Son seçili takımı kaydet

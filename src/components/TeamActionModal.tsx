@@ -58,10 +58,10 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
         onTeamCreated(result.data);
         handleClose();
       } else {
-        setError(result.error || 'Takım oluşturulurken bir hata oluştu');
+        setError(result.error || 'An error occurred while creating the team');
       }
     } catch (err) {
-      setError('Beklenmeyen bir hata oluştu');
+      setError('An unexpected error occurred');
       console.error('Create team error:', err);
     } finally {
       setLoading(false);
@@ -71,7 +71,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
   const handleJoinSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inviteCode.trim()) {
-      setError('Davet kodu zorunludur');
+      setError('Invite code is required');
       return;
     }
 
@@ -85,11 +85,11 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
         onTeamJoined(result.data);
         handleClose();
       } else {
-        setError(result.error || 'Takıma katılırken bir hata oluştu');
+        setError(result.error || 'An error occurred while joining the team');
       }
     } catch (error) {
       console.error('Join team error:', error);
-      setError('Beklenmeyen bir hata oluştu');
+      setError('An unexpected error occurred');
     } finally {
       setLoading(false);
     }
@@ -104,7 +104,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
           {/* Header with close button */}
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">
-              {actionType === 'create' ? 'Yeni Takım Oluştur' : 'Takıma Katıl'}
+              {actionType === 'create' ? 'Create New Team' : 'Join Team'}
             </h3>
             <button
               onClick={handleClose}
@@ -131,7 +131,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                Yeni Takım Oluştur
+                Create New Team
               </button>
               <button
                 type="button"
@@ -145,7 +145,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                     : 'text-gray-500 hover:text-gray-900'
                 }`}
               >
-                Takıma Katıl
+                Join Team
               </button>
             </div>
           </div>
@@ -162,7 +162,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
             <form onSubmit={handleCreateSubmit}>
               <div className="mb-4">
                 <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Takım Adı
+                  Team Name
                 </label>
                 <input
                   type="text"
@@ -170,7 +170,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                   name="name"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Takım adını girin"
+                  placeholder="Enter team name"
                   value={createFormData.name}
                   onChange={handleCreateInputChange}
                   disabled={loading}
@@ -179,14 +179,14 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
 
               <div className="mb-6">
                 <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
-                  Açıklama
+                  Description
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Takım açıklamasını girin"
+                  placeholder="Enter team description"
                   value={createFormData.description}
                   onChange={handleCreateInputChange}
                   disabled={loading}
@@ -200,14 +200,14 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                   className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
                   disabled={loading}
                 >
-                  İptal
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {loading ? 'Oluşturuluyor...' : 'Oluştur'}
+                  {loading ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </form>
@@ -218,7 +218,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
             <form onSubmit={handleJoinSubmit}>
               <div className="mb-4">
                 <label htmlFor="inviteCode" className="block text-sm font-medium text-gray-700 mb-2">
-                  Davet Kodu
+                  Invite Code
                 </label>
                 <input
                   type="text"
@@ -226,7 +226,7 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                   value={inviteCode}
                   onChange={(e) => setInviteCode(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="8 karakterli davet kodunu girin"
+                  placeholder="Enter 8-character invite code"
                   maxLength={8}
                   disabled={loading}
                 />
@@ -239,20 +239,20 @@ const TeamActionModal: React.FC<TeamActionModalProps> = ({
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                   disabled={loading}
                 >
-                  İptal
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   disabled={loading || !inviteCode.trim()}
                 >
-                  {loading ? 'Katılıyor...' : 'Katıl'}
+                  {loading ? 'Joining...' : 'Join'}
                 </button>
               </div>
 
               <div className="mt-4 p-3 bg-blue-50 rounded-md">
                 <p className="text-sm text-blue-700">
-                  <strong>Not:</strong> Davet kodu ile katılım talebiniz takım yöneticisi tarafından onaylanana kadar beklemede kalacaktır.
+                  <strong>Note:</strong> Your request to join with the invite code will remain pending until approved by the team administrator.
                 </p>
               </div>
             </form>

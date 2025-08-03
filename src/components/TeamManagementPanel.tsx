@@ -18,7 +18,7 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
   const [generatingCode, setGeneratingCode] = useState(false);
 
   const loadPendingMembers = useCallback(async () => {
-    // Sadece admin ise pending members'ı yükle
+    // Only load pending members if user is admin
     if (userRole !== 'ADMIN') return;
 
     try {
@@ -35,7 +35,7 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
     loadPendingMembers();
   }, [loadPendingMembers]);
 
-  // Admin değilse bu paneli gösterme
+  // Don't show this panel if user is not admin
   if (userRole !== 'ADMIN') {
     return null;
   }
@@ -45,9 +45,9 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
     try {
       const result = await teamService.approveMember(team.id, { memberId, role });
       if (result.success) {
-        // Bekleyen üyeleri yenile
+        // Refresh pending members
         await loadPendingMembers();
-        // Takım detaylarını yenile
+        // Refresh team details
         const teamDetails = await teamService.getTeamDetails(team.id);
         if (teamDetails.success && teamDetails.data) {
           onTeamUpdated(teamDetails.data);
@@ -65,9 +65,9 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
     try {
       const result = await teamService.rejectMember(team.id, memberId);
       if (result.success) {
-        // Bekleyen üyeleri yenile
+        // Refresh pending members
         await loadPendingMembers();
-        // Takım detaylarını yenile
+        // Refresh team details
         const teamDetails = await teamService.getTeamDetails(team.id);
         if (teamDetails.success && teamDetails.data) {
           onTeamUpdated(teamDetails.data);
@@ -97,23 +97,23 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
   const copyInviteCode = () => {
     if (team.inviteCode) {
       navigator.clipboard.writeText(team.inviteCode);
-      alert('Davet kodu kopyalandı!');
+      alert('Invite code copied!');
     }
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-6 mb-6">
-      <h3 className="text-lg font-medium text-gray-900 mb-4">Takım Yönetimi</h3>
+      <h3 className="text-lg font-medium text-gray-900 mb-4">Team Management</h3>
 
-      {/* Davet Kodu Bölümü */}
+      {/* Invite Code Section */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-md font-medium text-gray-700">Davet Kodu</h4>
+          <h4 className="text-md font-medium text-gray-700">Invite Code</h4>
           <button
             onClick={() => setInviteCodeVisible(!inviteCodeVisible)}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
-            {inviteCodeVisible ? 'Gizle' : 'Göster'}
+            {inviteCodeVisible ? 'Hide' : 'Show'}
           </button>
         </div>
 
@@ -121,7 +121,7 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
           <div className="bg-gray-50 p-4 rounded-md">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Mevcut davet kodu:</p>
+                <p className="text-sm text-gray-600">Current invite code:</p>
                 <p className="text-lg font-mono font-bold text-gray-900">
                   {team.inviteCode}
                 </p>
@@ -131,14 +131,14 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
                   onClick={copyInviteCode}
                   className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 rounded"
                 >
-                  Kopyala
+                  Copy
                 </button>
                 <button
                   onClick={handleGenerateInviteCode}
                   disabled={generatingCode}
                   className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
                 >
-                  {generatingCode ? 'Oluşturuluyor...' : 'Yeni Kod'}
+                  {generatingCode ? 'Generating...' : 'New Code'}
                 </button>
               </div>
             </div>
@@ -146,14 +146,14 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
         )}
       </div>
 
-      {/* Bekleyen Üyeler */}
+      {/* Pending Members */}
       <div>
         <h4 className="text-md font-medium text-gray-700 mb-3">
-          Bekleyen Üyeler ({pendingMembers.length})
+          Pending Members ({pendingMembers.length})
         </h4>
 
         {pendingMembers.length === 0 ? (
-          <p className="text-sm text-gray-500 italic">Bekleyen üye bulunmuyor</p>
+          <p className="text-sm text-gray-500 italic">No pending members</p>
         ) : (
           <div className="space-y-3">
             {pendingMembers.map((member) => (
@@ -171,12 +171,12 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
                     defaultValue="OBSERVER"
                     id={`role-${member.id}`}
                   >
-                    <option value="OBSERVER">Gözlemci</option>
+                    <option value="OBSERVER">Observer</option>
                     <option value="ADMIN">Admin</option>
-                    <option value="DEVELOPER">Geliştirici</option>
-                    <option value="ANALYST">Analist</option>
+                    <option value="DEVELOPER">Developer</option>
+                    <option value="ANALYST">Analyst</option>
                     <option value="TESTER">Tester</option>
-                    <option value="TECHNICAL_LEAD">Teknik Lider</option>
+                    <option value="TECHNICAL_LEAD">Technical Lead</option>
                     <option value="SCRUM_MASTER">Scrum Master</option>
                     <option value="PRODUCT_OWNER">Product Owner</option>
                   </select>
@@ -189,7 +189,7 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
                     disabled={loading}
                     className="px-3 py-1 text-sm bg-green-600 hover:bg-green-700 text-white rounded disabled:opacity-50"
                   >
-                    Onayla
+                    Approve
                   </button>
 
                   <button
@@ -197,7 +197,7 @@ const TeamManagementPanel: React.FC<TeamManagementPanelProps> = ({
                     disabled={loading}
                     className="px-3 py-1 text-sm bg-red-600 hover:bg-red-700 text-white rounded disabled:opacity-50"
                   >
-                    Reddet
+                    Reject
                   </button>
                 </div>
               </div>

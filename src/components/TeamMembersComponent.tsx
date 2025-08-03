@@ -24,10 +24,10 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
       if (result.success && result.data) {
         setTeamDetails(result.data);
       } else {
-        setError(result.error || 'Takım detayları yüklenemedi');
+        setError(result.error || 'Team details could not be loaded');
       }
     } catch (error) {
-      setError('Takım detayları yüklenirken bir hata oluştu');
+      setError('An error occurred while loading team details');
       console.error('Error loading team details:', error);
     } finally {
       setLoading(false);
@@ -51,17 +51,17 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
 
   const getRoleLabel = (role: string) => {
     const roleLabels = {
-      'OBSERVER': 'Gözlemci',
-      'ADMIN': 'Yönetici',
+      'OBSERVER': 'Observer',
+      'ADMIN': 'Admin',
       'SCRUM_MASTER': 'Scrum Master',
-      'DEVELOPER': 'Geliştirici',
-      'TESTER': 'Test Uzmanı',
-      'ANALYST': 'Analist',
-      'TECHNICAL_LEAD': 'Teknik Lider',
-      'PRODUCT_OWNER': 'Ürün Sahibi',
+      'DEVELOPER': 'Developer',
+      'TESTER': 'Tester',
+      'ANALYST': 'Analyst',
+      'TECHNICAL_LEAD': 'Technical Lead',
+      'PRODUCT_OWNER': 'Product Owner',
     };
 
-    return roleLabels[role as keyof typeof roleLabels] || 'Üye';
+    return roleLabels[role as keyof typeof roleLabels] || 'Member';
   };
 
   const getStatusColor = (status: string) => {
@@ -76,12 +76,12 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
 
   const getStatusLabel = (status: string) => {
     const statusLabels = {
-      'ACTIVE': 'Aktif',
-      'PENDING': 'Beklemede',
-      'REJECTED': 'Reddedildi'
+      'ACTIVE': 'Active',
+      'PENDING': 'Pending',
+      'REJECTED': 'Rejected'
     };
 
-    return statusLabels[status as keyof typeof statusLabels] || 'Bilinmiyor';
+    return statusLabels[status as keyof typeof statusLabels] || 'Unknown';
   };
 
   if (loading) {
@@ -89,7 +89,7 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
       <div className="bg-white rounded-lg shadow h-full">
         <div className="p-6">
           <div className="flex items-center justify-center h-48">
-            <div className="text-gray-500">Takım üyeleri yükleniyor...</div>
+            <div className="text-gray-500">Loading team members...</div>
           </div>
         </div>
       </div>
@@ -113,11 +113,11 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900">Takım Üyeleri</h3>
+          <h3 className="text-lg font-medium text-gray-900">Team Members</h3>
           <button
             onClick={onEditClick}
             className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
-            title="Takım üyelerini düzenle"
+            title="Edit team members"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -170,10 +170,10 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
         ) : (
           <div className="text-center py-8">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">Takım üyesi bulunamadı</h3>
-            <p className="mt-1 text-sm text-gray-500">Bu takımda henüz üye bulunmuyor.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No team members found</h3>
+            <p className="mt-1 text-sm text-gray-500">This team has no members yet.</p>
           </div>
         )}
 
@@ -181,7 +181,7 @@ const TeamMembersComponent: React.FC<TeamMembersComponentProps> = ({ teamId, onE
         {teamDetails && teamDetails.members && (
           <div className="mt-6 pt-6 border-t border-gray-200">
             <div className="text-sm text-gray-500">
-              Toplam {teamDetails.members.length} üye
+              Total {teamDetails.members.length} members
             </div>
           </div>
         )}

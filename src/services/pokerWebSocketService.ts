@@ -1,10 +1,35 @@
 import { Client } from '@stomp/stompjs';
+import type { StompSubscription, IFrame, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
 // Environment Configuration
 const WS_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'ws://localhost:8080';
 
+// Interface definitions
+interface PokerMessage {
+  type: string;
+  userId?: string;
+  userName?: string;
+  sessionId?: string;
+  voteValue?: string | number;
+  finalEstimate?: string | number;
+  timestamp: string;
+  [key: string]: any;
+}
+
+interface CurrentUser {
+  userId: string | null;
+  userName: string | null;
+}
+
 class PokerWebSocketService {
+  private client: Client | null;
+  private isConnected: boolean;
+  private subscriptions: Map<string, StompSubscription>;
+  private currentTeamId: string | null;
+  private userId: string | null;
+  private userName: string | null;
+
   constructor() {
     this.client = null;
     this.isConnected = false;
@@ -14,7 +39,7 @@ class PokerWebSocketService {
     this.userName = null;
   }
 
-  connect(token) {
+  connect(token: string): void {
     const wsUrl = `${WS_BASE_URL}/ws`;
     console.log('WebSocket bağlantısı kuruluyor:', wsUrl);
 
@@ -23,14 +48,14 @@ class PokerWebSocketService {
       connectHeaders: {
         'Authorization': `Bearer ${token}`
       },
-      onConnect: (frame) => {
+      onConnect: (frame: IFrame) => {
         console.log('WebSocket bağlantısı kuruldu:', frame);
         this.isConnected = true;
       },
-      onStompError: (frame) => {
+      onStompError: (frame: IFrame) => {
         console.error('STOMP error:', frame);
       },
-      onWebSocketError: (event) => {
+      onWebSocketError: (event: Event) => {
         console.error('WebSocket error:', event);
       },
       onDisconnect: () => {
@@ -46,7 +71,7 @@ class PokerWebSocketService {
     this.client.activate();
   }
 
-  disconnect() {
+  disconnect(): void {
     if (this.client) {
       // Çıkış mesajını gönder
       if (this.currentTeamId && this.userId && this.userName) {
@@ -63,8 +88,8 @@ class PokerWebSocketService {
   }
 
   // Takım poker odasına abone ol
-  subscribeToTeamPoker(teamId, callback) {
-    if (!this.isConnected) {
+  subscribeToTeamPoker(teamId: string, callback: (data: PokerMessage) => void): { teamSubscription: StompSubscription; sessionSubscription: StompSubscription; errorSubscription: StompSubscription } | undefined {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok');
       return;
     }
@@ -73,24 +98,24 @@ class PokerWebSocketService {
 
     // Takım geneli bildirimler
     const teamDestination = `/topic/poker/team/${teamId}`;
-    const teamSubscription = this.client.subscribe(teamDestination, (message) => {
-      const data = JSON.parse(message.body);
+    const teamSubscription = this.client.subscribe(teamDestination, (message: IMessage) => {
+      const data = JSON.parse(message.body) as PokerMessage;
       console.log('Team poker message received:', data);
       callback(data);
     });
 
     // Kullanıcıya özel oturum bilgileri
     const sessionDestination = `/queue/poker/session`;
-    const sessionSubscription = this.client.subscribe(sessionDestination, (message) => {
-      const data = JSON.parse(message.body);
+    const sessionSubscription = this.client.subscribe(sessionDestination, (message: IMessage) => {
+      const data = JSON.parse(message.body) as PokerMessage;
       console.log('Session message received:', data);
       callback(data);
     });
 
     // Kullanıcıya özel hata mesajları
     const errorDestination = `/queue/poker/error`;
-    const errorSubscription = this.client.subscribe(errorDestination, (message) => {
-      const data = JSON.parse(message.body);
+    const errorSubscription = this.client.subscribe(errorDestination, (message: IMessage) => {
+      const data = JSON.parse(message.body) as PokerMessage;
       console.log('Error message received:', data);
       callback(data);
     });
@@ -103,7 +128,7 @@ class PokerWebSocketService {
   }
 
   // Takım poker odasından çık
-  unsubscribeFromTeamPoker(teamId) {
+  unsubscribeFromTeamPoker(teamId: string): void {
     const teamKey = `poker-team-${teamId}`;
     const sessionKey = `poker-session-${teamId}`;
     const errorKey = `poker-error-${teamId}`;
@@ -120,8 +145,8 @@ class PokerWebSocketService {
   }
 
   // Poker odasına katılım
-  sendJoinMessage(teamId, userId, userName) {
-    if (!this.isConnected) {
+  sendJoinMessage(teamId: string, userId: string, userName: string): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - join mesajı gönderilemedi');
       return;
     }
@@ -144,8 +169,8 @@ class PokerWebSocketService {
   }
 
   // Poker odasından çıkış
-  sendLeaveMessage(teamId, userId, userName) {
-    if (!this.isConnected) {
+  sendLeaveMessage(teamId: string, userId: string, userName: string): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - leave mesajı gönderilemedi');
       return;
     }
@@ -164,8 +189,8 @@ class PokerWebSocketService {
   }
 
   // Oy kullanma
-  sendVoteMessage(teamId, sessionId, voteValue) {
-    if (!this.isConnected) {
+  sendVoteMessage(teamId: string, sessionId: string, voteValue: string | number): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - vote mesajı gönderilemedi');
       return;
     }
@@ -186,8 +211,8 @@ class PokerWebSocketService {
   }
 
   // Oyları açma
-  sendRevealMessage(teamId, sessionId) {
-    if (!this.isConnected) {
+  sendRevealMessage(teamId: string, sessionId: string): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - reveal mesajı gönderilemedi');
       return;
     }
@@ -207,8 +232,8 @@ class PokerWebSocketService {
   }
 
   // Oylama başlatma
-  sendStartVotingMessage(teamId, sessionId) {
-    if (!this.isConnected) {
+  sendStartVotingMessage(teamId: string, sessionId: string): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - start voting mesajı gönderilemedi');
       return;
     }
@@ -228,8 +253,8 @@ class PokerWebSocketService {
   }
 
   // Oturum tamamlama
-  sendCompleteSessionMessage(teamId, sessionId, finalEstimate) {
-    if (!this.isConnected) {
+  sendCompleteSessionMessage(teamId: string, sessionId: string, finalEstimate: string | number): void {
+    if (!this.isConnected || !this.client) {
       console.error('WebSocket bağlantısı yok - complete session mesajı gönderilemedi');
       return;
     }
@@ -250,17 +275,17 @@ class PokerWebSocketService {
   }
 
   // Bağlantı durumunu kontrol et
-  isConnectionActive() {
-    return this.isConnected && this.client && this.client.connected;
+  isConnectionActive(): boolean {
+    return this.isConnected && this.client !== null && this.client.connected;
   }
 
   // Mevcut takım ID'sini al
-  getCurrentTeamId() {
+  getCurrentTeamId(): string | null {
     return this.currentTeamId;
   }
 
-  // Kullanıcı bilgilerini al
-  getCurrentUser() {
+  // Mevcut kullanıcı bilgilerini al
+  getCurrentUser(): CurrentUser {
     return {
       userId: this.userId,
       userName: this.userName
