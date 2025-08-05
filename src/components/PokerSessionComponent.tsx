@@ -11,7 +11,7 @@ interface PokerSessionComponentProps {
   onClose: () => void;
 }
 
-const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId, onClose }) => {
+const PokerSessionComponent: React.FC<PokerSessionComponentProps> = ({ teamId }) => {
   const [session, setSession] = useState<PokerSession | null>(null);
   const [votes, setVotes] = useState<PokerVote[]>([]);
   const [userVote, setUserVote] = useState<string | null>(null);
