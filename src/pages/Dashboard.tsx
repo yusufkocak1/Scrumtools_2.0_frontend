@@ -14,7 +14,6 @@ interface User {
 
 const Dashboard: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [selectedTeamDetails, setSelectedTeamDetails] = useState<TeamDetails | null>(null);
   const [userRole, setUserRole] = useState<string>('MEMBER');
@@ -27,8 +26,6 @@ const Dashboard: React.FC = () => {
       const result = await teamService.getUserTeams();
       if (result.success && result.data) {
         const teamsData = result.data;
-        setTeams(teamsData);
-
         // Check last selected team
         const lastSelectedTeamId = teamService.getLastSelectedTeam();
         if (lastSelectedTeamId && teamsData.length > 0) {
@@ -119,36 +116,6 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // No teams view
-  if (!teamsLoading && teams.length === 0) {
-    return (
-      <div className="max-w-4xl mx-auto py-16 px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 515.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-          </svg>
-          <h2 className="mt-6 text-3xl font-bold text-gray-900">You don't have any teams yet</h2>
-          <p className="mt-4 text-lg text-gray-500">
-            You need to join a team to use Scrum tools.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Create New Team
-            </button>
-            <button className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-              </svg>
-              Join Team
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Normal dashboard when teams exist
   return (
